@@ -64,7 +64,7 @@ while(True):
             cv2.line(frame, start_point, end_point, (255, 0, 0), 2)
 
     # obstacle test scuffed code
-    frame = animation.hourglass(cur_frame, frame, position=(0, 0), size=(200, 100))
+    frame = animation.phone(cur_frame, frame, position=(0, 0), size=(150, 300))
 
     cv2.imshow('frame', frame)
     if cv2.waitKey(1) & 0xFF == ord('q'): 

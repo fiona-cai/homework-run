@@ -1,8 +1,14 @@
 import cv2
 
 FRAMES = {
-    "hourglass": 32
+    "hourglass": 32,
+    "phone": 49
 }
+
+def phone(cur_frame_num, frame, position=(0, 0), size=(640, 480)):
+    num = cur_frame_num % FRAMES["hourglass"]
+    img = cv2.imread(f"./sprites/phone/frame_{num}.png", cv2.IMREAD_UNCHANGED)
+    return animate(img, frame, position, size)
 
 def hourglass(cur_frame_num, frame, position=(0, 0), size=(640, 480)):
     num = cur_frame_num % FRAMES["hourglass"]
