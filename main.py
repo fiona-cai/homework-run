@@ -1,5 +1,7 @@
 import animation
 import cv2
+import logging_config
+import logging
 import mediapipe as mp
 import lights
 import time
@@ -11,6 +13,8 @@ cur_frame = 0
 vid = cv2.VideoCapture(0) 
 vid.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+
+logging_config.setup_logging()
 
 pose_detector = mp.solutions.pose.Pose(static_image_mode=True)
 
@@ -35,6 +39,8 @@ lights.left_on(light_port)
 lights.middle_on(light_port)
 lights.right_on(light_port)
 
+prev_left_knee_pt = None
+
 while(True): 
     # Capture the video frame by frame 
     ret, frame = vid.read()
@@ -49,10 +55,23 @@ while(True):
         x_diff = int(results.pose_landmarks.landmark[7].x * frame.shape[1]) - int(results.pose_landmarks.landmark[8].x * frame.shape[1])
         y_diff = int(results.pose_landmarks.landmark[7].y * frame.shape[0]) - int(results.pose_landmarks.landmark[8].y * frame.shape[0])
         square = x_diff ** 2 + y_diff ** 2
-        distance = int(square ** 0.5)
-        head_point = (int(results.pose_landmarks.landmark[0].x * frame.shape[1]), int(results.pose_landmarks.landmark[0].y * frame.shape[0]))
+        distance = int(square ** 0.5) # distance between 7 and 8, diameter of the circle
+        head_point = (int(results.pose_landmarks.landmark[0].x * frame.shape[1]), int(results.pose_landmarks.landmark[0].y * frame.shape[0])) # 0
         cv2.circle(frame, head_point, distance, (0, 255, 0), 3)
-        
+
+        # logging.info(f"The point for 26 is: {results.pose_landmarks.landmark[26].y}")
+        # logging.info(f"The head distance is is {head_point}")
+
+        # use this point to detect whether or not the player is running, amplitude has to be relative to head distance
+        left_knee_relative = int(results.pose_landmarks.landmark[26].y * frame.shape[0])
+        logging.info(f"THE LEFT KNEE RELATIVE IS {left_knee_relative}")
+
+        amplitude = abs((head_point[1] - left_knee_relative) / distance)
+        # logging.info(f"headpoint {head_point[1]} - left knee relative {left_knee_relative}")
+        # logging.info(f"THE DISTANCE IS {distance}")
+        # logging.info(f"THE AMPLITUDE IS {amplitude}")
+
+
         for connection in connections:
             start_idx, end_idx = connection
             start_landmark = results.pose_landmarks.landmark[start_idx]
