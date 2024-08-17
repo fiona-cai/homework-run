@@ -3,12 +3,13 @@ import mediapipe as mp
 import lights
 import time
 
+light_port = lights.get_port()
+
 vid = cv2.VideoCapture(0) 
 vid.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
 pose_detector = mp.solutions.pose.Pose(static_image_mode=True)
-light_port = lights.get_port()
 
 time.sleep(2) # wait for the lights to connect
 
