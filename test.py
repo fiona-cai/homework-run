@@ -1,35 +1,40 @@
 import cv2
+import numpy as np
 
-# Load the images
+# Load the background and overlay images
 background = cv2.imread('background.png')
-overlay = cv2.imread('overlay.png')
+overlay = cv2.imread('overlay.png', cv2.IMREAD_UNCHANGED)  # IMREAD_UNCHANGED => open image with the alpha channel
 
-# Get dimensions of the background image
-bg_height, bg_width = background.shape[:2]  # Corrected this line
+# Check if the images were loaded successfully
+if background is None:
+    raise FileNotFoundError("Background image not found or could not be loaded.")
+if overlay is None:
+    raise FileNotFoundError("Overlay image not found or could not be loaded.")
 
-# Resize the overlay image to fit within the background image
-overlay_resized = cv2.resize(overlay, (bg_width, bg_height))
+# Get dimensions of the background and overlay images
+bg_height, bg_width = background.shape[:2]
+ov_height, ov_width = overlay.shape[:2]
 
-# Create a mask of the overlay image
-overlay_gray = cv2.cvtColor(overlay_resized, cv2.COLOR_BGR2GRAY)
-_, mask = cv2.threshold(overlay_gray, 1, 255, cv2.THRESH_BINARY)
+# Calculate the position to center the overlay on the background
+x_offset = (bg_width - ov_width) // 2
+y_offset = (bg_height - ov_height) // 2
 
-# Invert the mask
-mask_inv = cv2.bitwise_not(mask)
+# Create a copy of the background to overlay the image
+result = background.copy()
 
-# Black-out the area of overlay in the background
-bg_part = cv2.bitwise_and(background, background, mask=mask_inv)
+# Overlay the image
+for y in range(ov_height):
+    for x in range(ov_width):
+        overlay_color = overlay[y, x, :3]  # first three elements are color (RGB)
+        overlay_alpha = overlay[y, x, 3] / 255  # 4th element is the alpha channel, convert from 0-255 to 0.0-1.0
 
-# Take only region of overlay from overlay image
-overlay_part = cv2.bitwise_and(overlay_resized, overlay_resized, mask=mask)
+        # get the color from the background image
+        background_color = background[y + y_offset, x + x_offset]
 
-# Add the overlay part to the background part
-result = cv2.add(bg_part, overlay_part)
+        # combine the background color and the overlay color weighted by alpha
+        composite_color = background_color * (1 - overlay_alpha) + overlay_color * overlay_alpha
 
-# Save the result
-cv2.imwrite('result.png', result)
+        # update the result image in place
+        result[y + y_offset, x + x_offset] = composite_color
 
-# Display the result
-cv2.imshow('Result', result)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+cv2.imwrite('combined.png', result)
