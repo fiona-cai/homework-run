@@ -19,14 +19,14 @@ def extract_frames(video_path, output_folder, frames_per_second, duration):
     while success:
         if count % frame_interval == 0:
             frame_id = count // frame_interval
-            cv2.imwrite(f"sprites/hourglass/frame_{frame_id}.png", image)
+            cv2.imwrite(f"sprites/instagram/frame_{frame_id}.png", image)
         success, image = video.read()
         count += 1
 
     video.release()
 
 # Example usage
-video_path = 'sprites/hourglass/iridescent-hourglass.mp4'
+video_path = 'sprites/instagram/instagram.mp4'
 output_folder = 'output_frames'
 frames_per_second = 4
 duration = 10  # Last 10 seconds
