@@ -1,9 +1,12 @@
+import animation
 import cv2
 import mediapipe as mp
 import lights
 import time
 
 light_port = lights.get_port()
+
+cur_frame = 0
 
 vid = cv2.VideoCapture(0) 
 vid.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
@@ -60,9 +63,13 @@ while(True):
             cv2.circle(frame, end_point, 5, (0, 0, 255), -1)
             cv2.line(frame, start_point, end_point, (255, 0, 0), 2)
 
+    # obstacle test scuffed code
+    frame = animation.hourglass(cur_frame, frame, position=(0, 0), size=(200, 100))
+
     cv2.imshow('frame', frame)
     if cv2.waitKey(1) & 0xFF == ord('q'): 
         break
+    cur_frame += 1
 
 # After the loop release the cap object 
 vid.release() 
