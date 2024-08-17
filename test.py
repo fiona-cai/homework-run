@@ -5,7 +5,7 @@ background = cv2.imread('background.png')
 overlay = cv2.imread('overlay.png')
 
 # Get dimensions of the background image
-bg_height, bg_width = background.shape[:3]
+bg_height, bg_width = background.shape[:2]  # Corrected this line
 
 # Resize the overlay image to fit within the background image
 overlay_resized = cv2.resize(overlay, (bg_width, bg_height))
