@@ -4,7 +4,6 @@ vid.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
 while(True): 
-      
     # Capture the video frame 
     # by frame 
     ret, frame = vid.read()
