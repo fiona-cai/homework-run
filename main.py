@@ -31,12 +31,17 @@ connections = [
 lights.left_on(light_port)
 lights.middle_on(light_port)
 lights.right_on(light_port)
+
 while(True): 
-    # Capture the video frame 
-    # by frame 
+    # Capture the video frame by frame 
     ret, frame = vid.read()
+    
+    # Flip the frame horizontally
+    frame = cv2.flip(frame, 1)
+    
     results = pose_detector.process(frame)
     print(results.pose_landmarks)
+    
     if results.pose_landmarks:
         x_diff = int(results.pose_landmarks.landmark[7].x * frame.shape[1]) - int(results.pose_landmarks.landmark[8].x * frame.shape[1])
         y_diff = int(results.pose_landmarks.landmark[7].y * frame.shape[0]) - int(results.pose_landmarks.landmark[8].y * frame.shape[0])
@@ -44,6 +49,7 @@ while(True):
         distance = int(square ** 0.5)
         head_point = (int(results.pose_landmarks.landmark[0].x * frame.shape[1]), int(results.pose_landmarks.landmark[0].y * frame.shape[0]))
         cv2.circle(frame, head_point, distance, (0, 255, 0), 3)
+        
         for connection in connections:
             start_idx, end_idx = connection
             start_landmark = results.pose_landmarks.landmark[start_idx]
@@ -57,7 +63,6 @@ while(True):
     cv2.imshow('frame', frame)
     if cv2.waitKey(1) & 0xFF == ord('q'): 
         break
-
 
 # After the loop release the cap object 
 vid.release() 

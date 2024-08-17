@@ -36,7 +36,5 @@ for y in range(ov_height):
 
         # update the result image in place
         result[y + y_offset, x + x_offset] = composite_color
-while 1:
-    cv2.imshow('combined', result)
-    if cv2.waitKey(1) & 0xFF == ord('q'): 
-            break
+
+cv2.imwrite('combined.png', result)
