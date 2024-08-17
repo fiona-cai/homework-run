@@ -1,9 +1,15 @@
+import animation
 import cv2
 import logging_config
 import logging
 import mediapipe as mp
 import lights
 import time
+
+light_port = lights.get_port()
+
+cur_frame = 0
+
 vid = cv2.VideoCapture(0) 
 vid.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
@@ -11,7 +17,6 @@ vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 logging_config.setup_logging()
 
 pose_detector = mp.solutions.pose.Pose(static_image_mode=True)
-light_port = lights.get_port()
 
 time.sleep(2) # wait for the lights to connect
 
@@ -37,11 +42,15 @@ lights.right_on(light_port)
 prev_left_knee_pt = None
 
 while(True): 
-    # Capture the video frame 
-    # by frame 
+    # Capture the video frame by frame 
     ret, frame = vid.read()
+    
+    # Flip the frame horizontally
+    frame = cv2.flip(frame, 1)
+    
     results = pose_detector.process(frame)
-    # print(results.pose_landmarks)
+    print(results.pose_landmarks)
+    
     if results.pose_landmarks:
         x_diff = int(results.pose_landmarks.landmark[7].x * frame.shape[1]) - int(results.pose_landmarks.landmark[8].x * frame.shape[1])
         y_diff = int(results.pose_landmarks.landmark[7].y * frame.shape[0]) - int(results.pose_landmarks.landmark[8].y * frame.shape[0])
@@ -73,10 +82,13 @@ while(True):
             cv2.circle(frame, end_point, 5, (0, 0, 255), -1)
             cv2.line(frame, start_point, end_point, (255, 0, 0), 2)
 
-    cv2.imshow('frame', frame) # displays all the lines and points
+    # obstacle test scuffed code
+    frame = animation.phone(cur_frame, frame, position=(0, 0), size=(150, 300))
+
+    cv2.imshow('frame', frame)
     if cv2.waitKey(1) & 0xFF == ord('q'): 
         break
-
+    cur_frame += 1
 
 # After the loop release the cap object 
 vid.release() 
