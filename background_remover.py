@@ -1,7 +1,7 @@
 import cv2
 import os
 
-path = "./sprites/phone"
+path = "./sprites/hourglass"
 
 files = os.listdir(path)
 for file in files:
