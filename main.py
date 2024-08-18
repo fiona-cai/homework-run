@@ -25,6 +25,14 @@ logging_config.setup_logging()
 pose_detector = mp.solutions.pose.Pose(static_image_mode=True)
 selfie_segmentation = mp.solutions.selfie_segmentation.SelfieSegmentation(model_selection=1)
 
+def add_perspective_lines(frame, vanishing_point, num_lines=10):
+    height, width = frame.shape[:3]
+    for i in range(num_lines):
+        x = int(width / num_lines * i)
+        cv2.line(frame, (x, height), vanishing_point, (255, 255, 255), 2)
+    return frame
+
+
 def get_player_topic():
     screen = np.zeros((480, 720, 3), dtype=np.uint8)
     cv2.putText(screen, 'Enter your topic:', (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
@@ -136,6 +144,10 @@ while(True):
     # Flip the frame horizontally
     frame = cv2.flip(frame, 1)
     
+    # Define the vanishing point (center of the top edge of the frame)
+    vanishing_point = (frame.shape[1] // 2, 0)
+
+    
     results = pose_detector.process(frame)
     seg_results = selfie_segmentation.process(frame)
     
@@ -173,7 +185,12 @@ while(True):
             if len(knee_to_head_ratios) == num_frames:
                 ratio_change = knee_to_head_ratios[-1] - knee_to_head_ratios[0]
                 time_elapsed = cur_time - start_time
-                speed = abs(left_knee_to_head_ratio / time_elapsed)
+                try:
+                    speed = abs(left_knee_to_head_ratio / time_elapsed)
+                except Exception:
+                    speed=0
+                frame = add_perspective_lines(frame, vanishing_point)
+
                 logging.info(f"Speed: {speed} units/s")
                 
                 if speed > threshold:
