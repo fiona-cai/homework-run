@@ -11,7 +11,7 @@ light_port = lights.get_port()
 cur_frame = 0
 
 vid = cv2.VideoCapture(0) 
-vid.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+vid.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
 vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
 logging_config.setup_logging()
@@ -39,7 +39,10 @@ lights.left_on(light_port)
 lights.middle_on(light_port)
 lights.right_on(light_port)
 
-prev_left_knee_pt = None
+# List to store last num_frames ratios
+knee_to_head_ratios = []
+num_frames = 8 # may need to do more testing here
+threshold = 2000
 
 while(True): 
     # Capture the video frame by frame 
@@ -49,7 +52,7 @@ while(True):
     frame = cv2.flip(frame, 1)
     
     results = pose_detector.process(frame)
-    print(results.pose_landmarks)
+    # print(results.pose_landmarks)
     
     if results.pose_landmarks:
         x_diff = int(results.pose_landmarks.landmark[7].x * frame.shape[1]) - int(results.pose_landmarks.landmark[8].x * frame.shape[1])
@@ -59,17 +62,34 @@ while(True):
         head_point = (int(results.pose_landmarks.landmark[0].x * frame.shape[1]), int(results.pose_landmarks.landmark[0].y * frame.shape[0])) # 0
         cv2.circle(frame, head_point, distance, (0, 255, 0), 3)
 
-        # logging.info(f"The point for 26 is: {results.pose_landmarks.landmark[26].y}")
-        # logging.info(f"The head distance is is {head_point}")
-
+        
         # use this point to detect whether or not the player is running, amplitude has to be relative to head distance
-        left_knee_relative = int(results.pose_landmarks.landmark[26].y * frame.shape[0])
-        logging.info(f"THE LEFT KNEE RELATIVE IS {left_knee_relative}")
+        # logging.info(results.pose_landmarks.landmark[26])
+        left_knee_pt = results.pose_landmarks.landmark[26].y
+        left_knee_relative = int(results.pose_landmarks.landmark[26].y * frame.shape[0]) # left knee point relative to the frame of the camera
 
-        amplitude = abs((head_point[1] - left_knee_relative) / distance)
-        # logging.info(f"headpoint {head_point[1]} - left knee relative {left_knee_relative}")
-        # logging.info(f"THE DISTANCE IS {distance}")
-        # logging.info(f"THE AMPLITUDE IS {amplitude}")
+        if left_knee_pt >= 0 and left_knee_pt <= 1: # ensures that it's in the frame
+            left_knee_to_head_ratio = abs((head_point[1] - left_knee_relative) / distance)
+            left_knee_to_head_ratio *= 1000 # scale it up for more precise accuracy
+            knee_to_head_ratios.append(left_knee_to_head_ratio)
+
+            # logging.info(f"Calulation: head_point: {head_point[1]} - left_knee_relative: {left_knee_relative} then divided by distance is {distance}")
+            logging.info(f"THE LEFT KNEE TO HEAD RATIO IS {left_knee_to_head_ratio}")
+
+            if len(knee_to_head_ratios) > num_frames:
+                knee_to_head_ratios.pop(0)
+
+            if len(knee_to_head_ratios) == num_frames:
+                ratio_change = knee_to_head_ratios[-1] - knee_to_head_ratios[0]
+                logging.info(f"Ratio change over {num_frames} frames: {ratio_change}")
+                
+                # Decide if the movement indicates running
+                if ratio_change > threshold:  # Define an appropriate threshold
+                    logging.info("Running detected!")
+                else:
+                    logging.info("No significant running detected.")
+                
+            logging.info(f"Current ratio: {left_knee_to_head_ratio}")
 
 
         for connection in connections:
@@ -83,7 +103,7 @@ while(True):
             cv2.line(frame, start_point, end_point, (255, 0, 0), 2)
 
     # obstacle test scuffed code
-    frame = animation.phone(cur_frame, frame, position=(0, 0), size=(150, 300))
+    frame = animation.insta(cur_frame, frame, position=(0, 0), size=(150, 200))
 
     cv2.imshow('frame', frame)
     if cv2.waitKey(1) & 0xFF == ord('q'): 

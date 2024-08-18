@@ -1,19 +1,24 @@
 import cv2
 
 FRAMES = {
-    "hourglass": 32,
-    "phone": 49
+    "hourglass": 50,
+    "phone": 50,
+    "insta": 43
 }
 
 def phone(cur_frame_num, frame, position=(0, 0), size=(640, 480)):
-    num = cur_frame_num % FRAMES["hourglass"]
+    num = cur_frame_num % FRAMES["phone"]
     img = cv2.imread(f"./sprites/phone/frame_{num}.png", cv2.IMREAD_UNCHANGED)
     return animate(img, frame, position, size)
 
 def hourglass(cur_frame_num, frame, position=(0, 0), size=(640, 480)):
     num = cur_frame_num % FRAMES["hourglass"]
-    img = cv2.imread(f"./sprites/hourglass/Iridescent Hourglass@1-1249x585 ({num}).png", cv2.IMREAD_UNCHANGED)
-    
+    img = cv2.imread(f"./sprites/hourglass/frame_{num}.png", cv2.IMREAD_UNCHANGED)
+    return animate(img, frame, position, size)
+
+def insta(cur_frame_num, frame, position=(0, 0), size=(640, 480)):
+    num = cur_frame_num % FRAMES["insta"]
+    img = cv2.imread(f"./sprites/instagram/frame_{num}.png", cv2.IMREAD_UNCHANGED)
     return animate(img, frame, position, size)
 
 def animate(img, frame, position, size):
