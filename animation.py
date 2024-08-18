@@ -3,7 +3,7 @@ import cv2
 FRAMES = {
     "hourglass": 50,
     "phone": 50,
-    "insta": 43
+    "instagram": 43
 }
 
 def phone(cur_frame_num, frame, position=(0, 0), size=(640, 480)):
@@ -16,8 +16,8 @@ def hourglass(cur_frame_num, frame, position=(0, 0), size=(640, 480)):
     img = cv2.imread(f"./sprites/hourglass/frame_{num}.png", cv2.IMREAD_UNCHANGED)
     return animate(img, frame, position, size)
 
-def insta(cur_frame_num, frame, position=(0, 0), size=(640, 480)):
-    num = cur_frame_num % FRAMES["insta"]
+def instagram(cur_frame_num, frame, position=(0, 0), size=(640, 480)):
+    num = cur_frame_num % FRAMES["instagram"]
     img = cv2.imread(f"./sprites/instagram/frame_{num}.png", cv2.IMREAD_UNCHANGED)
     return animate(img, frame, position, size)
 
@@ -32,6 +32,11 @@ def animate(img, frame, position, size):
 
     for y in range(ov_height):
         for x in range(ov_width):
+
+            if y + y_offset >= bg_height or x + x_offset >= bg_width:
+                continue
+            if y + y_offset < 0 or x + x_offset < 0:
+                continue
             overlay_color = img[y, x, :3]  # first three elements are color (RGB)
             overlay_alpha = img[y, x, 3] / 255  # 4th element is the alpha channel, convert from 0-255 to 0.0-1.0
 

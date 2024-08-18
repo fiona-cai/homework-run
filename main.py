@@ -5,6 +5,7 @@ import logging
 import mediapipe as mp
 import lights
 import time
+import random
 
 light_port = lights.get_port()
 
@@ -17,6 +18,28 @@ vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 logging_config.setup_logging()
 
 pose_detector = mp.solutions.pose.Pose(static_image_mode=True)
+
+class obstacle:
+    def __init__(self, position, size, kind):
+        self.position = position
+        self.size = size
+        self.kind = kind
+        self.func = animation.instagram if kind == "instagram" else animation.phone if kind == "phone" else animation.hourglass
+    
+    def inc(self):
+        self.position[0] -= 1
+        self.position[1] -= 1
+        self.size[0] += 2
+        self.size[1] += 2
+    
+    def collide(self, point):
+        if self.size[0] < 70 and self.size[1] < 70:
+            return False
+        if point[0] >= self.position[0] and point[0] <= self.position[0] + self.size[0] and point[1] >= self.position[1] and point[1] <= self.position[1] + self.size[1]:
+            return True
+        return False
+
+obstacles = []
 
 time.sleep(2) # wait for the lights to connect
 
@@ -44,8 +67,11 @@ knee_to_head_ratios = []
 num_frames = 8 # may need to do more testing here
 threshold = 2000
 
+start_time = time.time()
+
 while(True): 
-    # Capture the video frame by frame 
+    # Capture the video frame by frame
+    cur_time = time.time()
     ret, frame = vid.read()
     
     # Flip the frame horizontally
@@ -103,8 +129,31 @@ while(True):
             cv2.line(frame, start_point, end_point, (255, 0, 0), 2)
 
     # obstacle test scuffed code
-    frame = animation.insta(cur_frame, frame, position=(0, 0), size=(150, 200))
+    if len(obstacles) == 0:
+        obstacles.append(obstacle([random.randint(0, 640), random.randint(0, 480)], [10, 10], random.choice(["hourglass", "phone", "instagram"])))
+    else:
+        for obs in obstacles:
 
+            frame = obs.func(cur_frame, frame, position=(obs.position[0], obs.position[1]), size=(obs.size[0], obs.size[1]))
+            obs.inc()
+            if results.pose_landmarks:
+                for landmark in results.pose_landmarks.landmark:
+                    x, y = int(landmark.x * frame.shape[1]), int(landmark.y * frame.shape[0])
+                    if obs.collide([x, y]):
+                        print("COLLISION DETECTED")
+                        # lights.left_off(light_port)
+                        # lights.middle_off(light_port)
+                        # lights.right_off(light_port)
+                        # lights.all_on(light_port)
+                        # time.sleep(1)
+                        # lights.all_off(light_port)
+                        obstacles.remove(obs)
+                        break
+        if obs.size[0] > 200 or obs.size[1] > 200:
+            obstacles.remove(obs)
+    
+    frame = cv2.putText(frame, f"Time Elapsed: {round(cur_time - start_time, 2)}s", (0, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    
     cv2.imshow('frame', frame)
     if cv2.waitKey(1) & 0xFF == ord('q'): 
         break
@@ -114,4 +163,5 @@ while(True):
 vid.release() 
 # Destroy all the windows 
 cv2.destroyAllWindows() 
+# close serial port
 lights.close(light_port)
