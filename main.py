@@ -4,11 +4,30 @@ import logging_config
 import logging
 import mediapipe as mp
 import numpy as np
-import lights
+# import lights
 import time
 import random
+import openai
+import os
 
-light_port = lights.get_port()
+openai.api_key = os.getenv('OPENAI_API_KEY')
+
+def generate_quiz(topic):
+    prompt = f"Create a true-false question about {topic}. Use this example format - 'Russia is the largest country by area in the world. F\n'"
+    
+    response = openai.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant helping a teacher write questions."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+    
+    quiz = response.choices[0].message.content.strip()
+    return quiz
+
+
+# light_port = lights.get_port()
 
 cur_frame = 0
 
@@ -67,6 +86,45 @@ class Obstacle:
         if point[0] >= self.position[0] and point[0] <= self.position[0] + self.size[0] and point[1] >= self.position[1] and point[1] <= self.position[1] + self.size[1]:
             return True
         return False
+    
+    def show_quiz_question(frame, flag):
+        quiz = generate_quiz(topic)
+        question = quiz[:-2]
+        answer=quiz[-1]
+        
+        if answer == "T":
+            answer = True
+        else:
+            answer = False
+
+        quiz_frame = np.zeros((480, 720, 3), dtype=np.uint8)
+        quiz_frame[:, :360, :] = (255, 0, 0)  # red for false
+        quiz_frame[:, 360:, :] = (0, 0, 255)  # blue for true
+        quiz_frame = cv2.putText(quiz_frame, question, (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+
+        cv2.imshow('quiz', quiz_frame)
+        cv2.waitKey(3000)  # wait for 1 second
+        time.sleep(3)
+        while time.time() - start_time < 3:
+            results = pose_detector.process(frame)
+            if results.pose_landmarks:
+                x, y = int(results.pose_landmarks.landmark[0].x * frame.shape[1]), int(results.pose_landmarks.landmark[0].y * frame.shape[0])
+                cv2.putText(quiz_frame, f"Time left: {int(3 - (time.time() - start_time))}s", (50, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+                cv2.imshow('quiz', quiz_frame)
+                if x < 360:
+                    answer = False
+                else:
+                    answer = True
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+        if answer == flag:
+            quiz_frame = cv2.putText(quiz_frame, "Correct!", (360, 240), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        else:
+            quiz_frame = cv2.putText(quiz_frame, "Incorrect!", (360, 240), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        cv2.imshow('quiz', quiz_frame)
+        cv2.waitKey(1000)  # wait for 1 second
+        cv2.destroyWindow('quiz')
+        
 
 obstacles = []
 object_locations = [
@@ -97,9 +155,9 @@ connections = [
     (25, 27)
 ]
 
-lights.left_on(light_port)
-lights.middle_on(light_port)
-lights.right_on(light_port)
+# lights.left_on(light_port)
+# lights.middle_on(light_port)
+# lights.right_on(light_port)
 
 # List to store last num_frames ratios
 
@@ -258,15 +316,31 @@ while(True):
                         print("COLLISION DETECTED")
                         lives -= 1
                         if lives == 2:
-                            lights.left_off(light_port)
+                            pass
+                            # lights.left_off(light_port)
                         elif lives == 1:
-                            lights.middle_off(light_port)
+                            pass
+                            # lights.middle_off(light_port)
                         elif lives <= 0:
-                            lights.right_off(light_port)
+                            pass
+                            # lights.right_off(light_port)
                             logging.info("GAME OVER")
                             game_over = True
                             break
 
+                        # Show quiz question
+                        flag = True  # hardcoded flag for this question
+                        if Obstacle.show_quiz_question(frame, flag):
+                            lives += 1
+                            if lives == 3:
+                                pass
+                                # lights.right_on(light_port)
+                            elif lives == 2:
+                                pass
+                                # lights.middle_on(light_port)
+                            elif lives == 1:
+                                pass
+                                # lights.left_on(light_port)
 
                         obstacles.remove(obs)
                         break
@@ -285,4 +359,4 @@ vid.release()
 # Destroy all the windows 
 cv2.destroyAllWindows() 
 # close serial port
-lights.close(light_port)
+# lights.close(light_port)
