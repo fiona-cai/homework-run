@@ -43,7 +43,7 @@ def get_player_topic():
     return user_input
 
 
-class obstacle:
+class Obstacle:
     def __init__(self, position, size, kind):
         self.position = position
         self.size = size
@@ -179,7 +179,7 @@ while(True):
 
     # obstacle test scuffed code
     if len(obstacles) == 0:
-        obstacles.append(obstacle(random.choice(object_locations), [10, 10], random.choice(["hourglass", "phone", "instagram"])))
+        obstacles.append(Obstacle(random.choice(object_locations), [10, 10], random.choice(["hourglass", "phone", "instagram"])))
     else:
         for obs in obstacles:
 
@@ -191,14 +191,12 @@ while(True):
                     if obs.collide([x, y]):
                         print("COLLISION DETECTED")
                         lives -= 1
-                        # lights.left_off(light_port)
-                        # lights.middle_off(light_port)
-                        # lights.right_off(light_port)
-                        # lights.all_on(light_port)
-                        # time.sleep(1)
-                        # lights.all_off(light_port)
-
-                        if lives <= 0:
+                        if lives == 2:
+                            lights.left_off(light_port)
+                        elif lives == 1:
+                            lights.middle_off(light_port)
+                        elif lives <= 0:
+                            lights.right_off(light_port)
                             logging.info("GAME OVER")
                             game_over = True
                             break
