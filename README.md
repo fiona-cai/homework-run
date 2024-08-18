@@ -1,4 +1,5 @@
 ![png](https://github.com/user-attachments/assets/3ba2aad5-a99d-4fb4-b832-f5a43f10b94a)
+
 # Homework Run
 
 Homework Run is an augmented reality game that challenges players to stay active while avoiding obstacles and answering trivia questions. Using their body movements, players control their in-game character, dodging giant cellphones, hourglasses, and Instagram icons. If they collide with an obstacle, they must answer a true-false question on a topic of their choice. The game tracks the player's speed and detects when they're running, making it a fun and engaging way to stay active.
@@ -55,3 +56,31 @@ We used a combination of computer vision and machine learning technologies to br
 - Printing a nicer hardware case.
 - More accurate detection for running.
 - Better UI.
+
+## Installation
+
+To get started with Homework Run, follow these steps:
+
+1. **Clone the repository**:
+    ```bash
+    git clone https://github.com/yourusername/homework-run.git
+    cd homework-run
+    ```
+
+2. **Install the required dependencies**:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+3. **Run the game**:
+    ```bash
+    python main.py
+    ```
+
+## Contributing
+
+We welcome contributions! Please read our Contributing Guidelines for more details.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
