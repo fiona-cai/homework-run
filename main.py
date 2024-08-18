@@ -107,6 +107,8 @@ first_load = True
 topic = ""
 
 start_time = time.time()
+is_on = False
+prev_time = None
 
 while(True):
     if first_load:
@@ -160,11 +162,55 @@ while(True):
                 logging.info(f"Ratio change over {num_frames} frames: {ratio_change}")
                 
                 if ratio_change > threshold:
+                    prev_time = None
                     logging.info("Running detected!")
+                    if lives == 3:
+                        lights.all_on(light_port)
+                    elif lives == 2:
+                        lights.left_off(light_port)
+                        lights.right_on(light_port)
+                        lights.middle_on(light_port)
+                    elif lives == 1:
+                        lights.middle_off(light_port)
+                        lights.left_off(light_port)
+                        lights.right_on(light_port)
+                    elif lives <= 0:
+                        lights.all_off(light_port)
+                        logging.info("GAME OVER")
+                        game_over = True
+                        break
                 else:
+                    logging.info("Player is not running")
+                    if prev_time is None:
+                        prev_time = cur_time
+                    elif cur_time - prev_time > 0.5:
+                        if is_on:
+                            lights.all_off(light_port)
+                            is_on = False
+                        else:
+                            lights.all_on(light_port)
+                            is_on = True
+
                     logging.info("No significant running detected.")
                 
             logging.info(f"Current ratio: {left_knee_to_head_ratio}")
+        else:
+            if lives == 3:
+                lights.all_on(light_port)
+            elif lives == 2:
+                lights.left_off(light_port)
+                lights.right_on(light_port)
+                lights.middle_on(light_port)
+            elif lives == 1:
+                lights.middle_off(light_port)
+                lights.left_off(light_port)
+                lights.right_on(light_port)
+            elif lives <= 0:
+                lights.all_off(light_port)
+                logging.info("GAME OVER")
+                game_over = True
+                break
+
 
 
         for connection in connections:

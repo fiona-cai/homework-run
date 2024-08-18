@@ -31,6 +31,16 @@ def right_on(comm_port):
 def right_off(comm_port):
     send(comm_port, bytes([6]))
 
+def all_off(comm_port):
+    left_off(comm_port)
+    middle_off(comm_port)
+    right_off(comm_port)
+
+def all_on(comm_port):
+    left_on(comm_port)
+    middle_on(comm_port)
+    right_on(comm_port)
+
 def close(ser):
     ser.close()
 
