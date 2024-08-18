@@ -12,6 +12,10 @@ light_port = lights.get_port()
 
 cur_frame = 0
 
+max_obstacles = 1 # this increases as time goes on
+last_addition = time.time()
+addition_time = 20
+
 vid = cv2.VideoCapture(0) 
 vid.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
 vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
@@ -19,6 +23,7 @@ vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 logging_config.setup_logging()
 
 pose_detector = mp.solutions.pose.Pose(static_image_mode=True)
+selfie_segmentation = mp.solutions.selfie_segmentation.SelfieSegmentation(model_selection=1)
 
 def get_player_topic():
     screen = np.zeros((480, 720, 3), dtype=np.uint8)
@@ -97,9 +102,10 @@ lights.middle_on(light_port)
 lights.right_on(light_port)
 
 # List to store last num_frames ratios
+
 knee_to_head_ratios = []
-num_frames = 8 # may need to do more testing here
-threshold = 2000
+num_frames = 4
+threshold = 1800
 
 lives = 3
 game_over = False
@@ -113,7 +119,7 @@ prev_time = None
 while(True):
     if first_load:
         first_load = False
-        get_player_topic()
+        topic = get_player_topic()
 
 
     if game_over:
@@ -133,23 +139,32 @@ while(True):
     frame = cv2.flip(frame, 1)
     
     results = pose_detector.process(frame)
+    seg_results = selfie_segmentation.process(frame)
+    
+    mask = seg_results.segmentation_mask >= 0.001
+    mask = mask.astype(np.uint8) * 255
+
+    black_background = np.zeros_like(frame)
+    person_with_black_bg = cv2.bitwise_and(frame, frame, mask=mask)
+    frame = cv2.bitwise_or(black_background, person_with_black_bg)
+    
+
     # print(results.pose_landmarks)
     
     if results.pose_landmarks:
         x_diff = int(results.pose_landmarks.landmark[7].x * frame.shape[1]) - int(results.pose_landmarks.landmark[8].x * frame.shape[1])
         y_diff = int(results.pose_landmarks.landmark[7].y * frame.shape[0]) - int(results.pose_landmarks.landmark[8].y * frame.shape[0])
         square = x_diff ** 2 + y_diff ** 2
-        distance = int(square ** 0.5) # distance between 7 and 8, diameter of the circle
-        head_point = (int(results.pose_landmarks.landmark[0].x * frame.shape[1]), int(results.pose_landmarks.landmark[0].y * frame.shape[0])) # 0
+        distance = int(square ** 0.5)
+        head_point = (int(results.pose_landmarks.landmark[0].x * frame.shape[1]), int(results.pose_landmarks.landmark[0].y * frame.shape[0]))
         cv2.circle(frame, head_point, distance, (0, 255, 0), 3)
 
-        
         left_knee_pt = results.pose_landmarks.landmark[26].y
-        left_knee_relative = int(results.pose_landmarks.landmark[26].y * frame.shape[0]) # left knee point relative to the frame of the camera
+        left_knee_relative = int(results.pose_landmarks.landmark[26].y * frame.shape[0])
 
-        if left_knee_pt >= 0 and left_knee_pt <= 1: # ensures that it's in the frame
+        if left_knee_pt >= 0 and left_knee_pt <= 1:
             left_knee_to_head_ratio = abs((head_point[1] - left_knee_relative) / distance)
-            left_knee_to_head_ratio *= 1000 # scale it up for more precise accuracy
+            left_knee_to_head_ratio *= 1000
             knee_to_head_ratios.append(left_knee_to_head_ratio)
 
             logging.info(f"THE LEFT KNEE TO HEAD RATIO IS {left_knee_to_head_ratio}")
@@ -159,9 +174,11 @@ while(True):
 
             if len(knee_to_head_ratios) == num_frames:
                 ratio_change = knee_to_head_ratios[-1] - knee_to_head_ratios[0]
-                logging.info(f"Ratio change over {num_frames} frames: {ratio_change}")
+                time_elapsed = cur_time - start_time
+                speed = abs(left_knee_to_head_ratio / time_elapsed)
+                logging.info(f"Speed: {speed} units/s")
                 
-                if ratio_change > threshold:
+                if speed > threshold:
                     prev_time = None
                     logging.info("Running detected!")
                     if lives == 3:
@@ -222,6 +239,9 @@ while(True):
             cv2.circle(frame, start_point, 5, (0, 0, 255), -1)
             cv2.circle(frame, end_point, 5, (0, 0, 255), -1)
             cv2.line(frame, start_point, end_point, (255, 0, 0), 2)
+    if cur_time - last_addition > addition_time:
+        last_addition = cur_time
+        max_obstacles += 1
 
     # obstacle test scuffed code
     if len(obstacles) == 0:
@@ -251,7 +271,7 @@ while(True):
                         obstacles.remove(obs)
                         break
         if obs.size[0] > 200 or obs.size[1] > 200:
-            obstacles.remove(obs)
+            obstacles.remove(obs) # too big
     
     frame = cv2.putText(frame, f"Time Elapsed: {round(cur_time - start_time, 2)}s", (0, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     
