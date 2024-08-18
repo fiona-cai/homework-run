@@ -1,3 +1,4 @@
+![png](https://github.com/user-attachments/assets/3ba2aad5-a99d-4fb4-b832-f5a43f10b94a)
 Homework Run is an augmented reality game that challenges players to stay active while avoiding obstacles and answering trivia questions. Using their body movements, players control their in-game character, dodging giant cellphones, hourglasses, and Instagram icons. If they collide with an obstacle, they must answer a true-false question on a topic of their choice. The game tracks the player's speed and detects when they're running, making it a fun and engaging way to stay active.
 
 ## Inspiration
