@@ -11,6 +11,10 @@ light_port = lights.get_port()
 
 cur_frame = 0
 
+max_obstacles = 1 # this increases as time goes on
+last_addition = time.time()
+addition_time = 20
+
 vid = cv2.VideoCapture(0) 
 vid.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
@@ -107,9 +111,12 @@ while(True):
             cv2.circle(frame, start_point, 5, (0, 0, 255), -1)
             cv2.circle(frame, end_point, 5, (0, 0, 255), -1)
             cv2.line(frame, start_point, end_point, (255, 0, 0), 2)
+    if cur_time - last_addition > addition_time:
+        last_addition = cur_time
+        max_obstacles += 1
 
     # obstacle test scuffed code
-    if len(obstacles) == 0:
+    if len(obstacles) < max_obstacles:
         obstacles.append(obstacle([random.randint(0, 640), random.randint(0, 480)], [10, 10], random.choice(["hourglass", "phone", "instagram"])))
     else:
         for obs in obstacles:
@@ -130,7 +137,7 @@ while(True):
                         obstacles.remove(obs)
                         break
         if obs.size[0] > 200 or obs.size[1] > 200:
-            obstacles.remove(obs)
+            obstacles.remove(obs) # too big
     
     frame = cv2.putText(frame, f"Time Elapsed: {round(cur_time - start_time, 2)}s", (0, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     
