@@ -20,6 +20,29 @@ logging_config.setup_logging()
 
 pose_detector = mp.solutions.pose.Pose(static_image_mode=True)
 
+def get_player_topic():
+    screen = np.zeros((480, 720, 3), dtype=np.uint8)
+    cv2.putText(screen, 'Enter your topic:', (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+    
+    user_input = ''
+    input_active = True
+    
+    while input_active:
+        screen = cv2.putText(screen, user_input, (50, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        cv2.imshow('Input Screen', screen)
+        
+        key = cv2.waitKey(1)
+        
+        # Handle key presses
+        if key == ord('\r'):
+            input_active = False
+        elif key >= 32 and key <= 126:
+            user_input += chr(key)
+    
+    cv2.destroyWindow('Input Screen')
+    return user_input
+
+
 class obstacle:
     def __init__(self, position, size, kind):
         self.position = position
@@ -69,9 +92,9 @@ connections = [
     (25, 27)
 ]
 
-# lights.left_on(light_port)
-# lights.middle_on(light_port)
-# lights.right_on(light_port)
+lights.left_on(light_port)
+lights.middle_on(light_port)
+lights.right_on(light_port)
 
 # List to store last num_frames ratios
 knee_to_head_ratios = []
@@ -80,10 +103,16 @@ threshold = 2000
 
 lives = 3
 game_over = False
+first_load = True
+topic = ""
 
 start_time = time.time()
 
 while(True):
+    if first_load:
+        first_load = False
+        get_player_topic()
+
 
     if game_over:
         frame = np.zeros((480, 720, 3), dtype=np.uint8)
