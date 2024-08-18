@@ -1,29 +1,29 @@
-import requests
+import openai
+import os
 
-def get_trivia_questions(topic, num_questions=5):
-    url = f"https://opentdb.com/api.php?amount={num_questions}&type=boolean&category={topic}"
-    response = requests.get(url)
-    data = response.json()
-    return data['results']
+# Set up your OpenAI API key from environment variables
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
-def create_quiz(questions):
-    quiz = []
-    for question in questions:
-        quiz.append({
-            'question': question['question'],
-            'correct_answer': question['correct_answer']
-        })
+def generate_quiz(topic):
+    prompt = f"Create a true-false quiz with 5 questions about {topic}. Each question should be educational and informative."
+    
+    response = openai.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+    
+    quiz = response.choices[0].message.content.strip()
     return quiz
 
-def main():
-    topic = input("Enter the topic for the quiz: ")
-    num_questions = int(input("Enter the number of questions: "))
-    questions = get_trivia_questions(topic, num_questions)
-    quiz = create_quiz(questions)
-    
-    print("\nTrue-False Quiz:")
-    for i, q in enumerate(quiz, 1):
-        print(f"{i}. {q['question']} (True/False)")
+# Get user input for the topic
+topic = input("Enter the topic for the quiz: ")
 
-if __name__ == "__main__":
-    main()
+# Generate the quiz
+quiz = generate_quiz(topic)
+
+# Print the quiz
+print("\nHere is your true-false quiz:\n")
+print(quiz)
