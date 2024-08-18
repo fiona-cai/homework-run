@@ -5,7 +5,7 @@ import os
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
 def generate_quiz(topic):
-    prompt = f"Create a true-false quiz with 5 questions about {topic}. Each question should be educational and informative. Use this example format - 'Russia is the largest country by area in the world. (F)\n'"
+    prompt = f"Create a true-false question about {topic}. Use this example format - 'Russia is the largest country by area in the world. F\n'"
     
     response = openai.chat.completions.create(
         model="gpt-3.5-turbo",
