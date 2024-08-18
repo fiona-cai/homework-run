@@ -6,6 +6,11 @@ import mediapipe as mp
 import time
 import random
 import numpy as np
+import lights
+
+
+light_port = lights.get_port()
+
 
 cur_frame = 0
 
