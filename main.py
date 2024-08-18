@@ -3,6 +3,7 @@ import cv2
 import logging_config
 import logging
 import mediapipe as mp
+import numpy as np
 import lights
 import time
 import random
@@ -40,6 +41,16 @@ class obstacle:
         return False
 
 obstacles = []
+object_locations = [
+    # move left and right
+    [144, 380],
+    [288, 380],
+    [432, 380],
+    # duck
+    [133, 200],
+    [288, 200],
+    [432, 200],
+]
 
 time.sleep(2) # wait for the lights to connect
 
@@ -58,18 +69,31 @@ connections = [
     (25, 27)
 ]
 
-lights.left_on(light_port)
-lights.middle_on(light_port)
-lights.right_on(light_port)
+# lights.left_on(light_port)
+# lights.middle_on(light_port)
+# lights.right_on(light_port)
 
 # List to store last num_frames ratios
 knee_to_head_ratios = []
 num_frames = 8 # may need to do more testing here
 threshold = 2000
 
+lives = 3
+game_over = False
+
 start_time = time.time()
 
-while(True): 
+while(True):
+
+    if game_over:
+        frame = np.zeros((480, 720, 3), dtype=np.uint8)
+        frame = cv2.putText(frame, "GAME OVER", (180, 240), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 4)
+        frame = cv2.putText(frame, "Press 'q' to quit", (180, 300), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        cv2.imshow('frame', frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+        continue
+
     # Capture the video frame by frame
     cur_time = time.time()
     ret, frame = vid.read()
@@ -89,8 +113,6 @@ while(True):
         cv2.circle(frame, head_point, distance, (0, 255, 0), 3)
 
         
-        # use this point to detect whether or not the player is running, amplitude has to be relative to head distance
-        # logging.info(results.pose_landmarks.landmark[26])
         left_knee_pt = results.pose_landmarks.landmark[26].y
         left_knee_relative = int(results.pose_landmarks.landmark[26].y * frame.shape[0]) # left knee point relative to the frame of the camera
 
@@ -99,7 +121,6 @@ while(True):
             left_knee_to_head_ratio *= 1000 # scale it up for more precise accuracy
             knee_to_head_ratios.append(left_knee_to_head_ratio)
 
-            # logging.info(f"Calulation: head_point: {head_point[1]} - left_knee_relative: {left_knee_relative} then divided by distance is {distance}")
             logging.info(f"THE LEFT KNEE TO HEAD RATIO IS {left_knee_to_head_ratio}")
 
             if len(knee_to_head_ratios) > num_frames:
@@ -109,8 +130,7 @@ while(True):
                 ratio_change = knee_to_head_ratios[-1] - knee_to_head_ratios[0]
                 logging.info(f"Ratio change over {num_frames} frames: {ratio_change}")
                 
-                # Decide if the movement indicates running
-                if ratio_change > threshold:  # Define an appropriate threshold
+                if ratio_change > threshold:
                     logging.info("Running detected!")
                 else:
                     logging.info("No significant running detected.")
@@ -130,7 +150,7 @@ while(True):
 
     # obstacle test scuffed code
     if len(obstacles) == 0:
-        obstacles.append(obstacle([random.randint(0, 640), random.randint(0, 480)], [10, 10], random.choice(["hourglass", "phone", "instagram"])))
+        obstacles.append(obstacle(random.choice(object_locations), [10, 10], random.choice(["hourglass", "phone", "instagram"])))
     else:
         for obs in obstacles:
 
@@ -141,12 +161,20 @@ while(True):
                     x, y = int(landmark.x * frame.shape[1]), int(landmark.y * frame.shape[0])
                     if obs.collide([x, y]):
                         print("COLLISION DETECTED")
+                        lives -= 1
                         # lights.left_off(light_port)
                         # lights.middle_off(light_port)
                         # lights.right_off(light_port)
                         # lights.all_on(light_port)
                         # time.sleep(1)
                         # lights.all_off(light_port)
+
+                        if lives <= 0:
+                            logging.info("GAME OVER")
+                            game_over = True
+                            break
+
+
                         obstacles.remove(obs)
                         break
         if obs.size[0] > 200 or obs.size[1] > 200:
