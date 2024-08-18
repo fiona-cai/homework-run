@@ -3,6 +3,7 @@ import cv2
 import logging_config
 import logging
 import mediapipe as mp
+import numpy as np
 import lights
 import time
 import random
@@ -68,18 +69,31 @@ connections = [
     (25, 27)
 ]
 
-lights.left_on(light_port)
-lights.middle_on(light_port)
-lights.right_on(light_port)
+# lights.left_on(light_port)
+# lights.middle_on(light_port)
+# lights.right_on(light_port)
 
 # List to store last num_frames ratios
 knee_to_head_ratios = []
 num_frames = 8 # may need to do more testing here
 threshold = 2000
 
+lives = 3
+game_over = False
+
 start_time = time.time()
 
-while(True): 
+while(True):
+
+    if game_over:
+        frame = np.zeros((480, 720, 3), dtype=np.uint8)
+        frame = cv2.putText(frame, "GAME OVER", (180, 240), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 4)
+        frame = cv2.putText(frame, "Press 'q' to quit", (180, 300), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        cv2.imshow('frame', frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+        continue
+
     # Capture the video frame by frame
     cur_time = time.time()
     ret, frame = vid.read()
@@ -147,12 +161,20 @@ while(True):
                     x, y = int(landmark.x * frame.shape[1]), int(landmark.y * frame.shape[0])
                     if obs.collide([x, y]):
                         print("COLLISION DETECTED")
+                        lives -= 1
                         # lights.left_off(light_port)
                         # lights.middle_off(light_port)
                         # lights.right_off(light_port)
                         # lights.all_on(light_port)
                         # time.sleep(1)
                         # lights.all_off(light_port)
+
+                        if lives <= 0:
+                            logging.info("GAME OVER")
+                            game_over = True
+                            break
+
+
                         obstacles.remove(obs)
                         break
         if obs.size[0] > 200 or obs.size[1] > 200:
