@@ -40,6 +40,16 @@ class obstacle:
         return False
 
 obstacles = []
+object_locations = [
+    # move left and right
+    [144, 380],
+    [288, 380],
+    [432, 380],
+    # duck
+    [133, 200],
+    [288, 200],
+    [432, 200],
+]
 
 time.sleep(2) # wait for the lights to connect
 
@@ -89,8 +99,6 @@ while(True):
         cv2.circle(frame, head_point, distance, (0, 255, 0), 3)
 
         
-        # use this point to detect whether or not the player is running, amplitude has to be relative to head distance
-        # logging.info(results.pose_landmarks.landmark[26])
         left_knee_pt = results.pose_landmarks.landmark[26].y
         left_knee_relative = int(results.pose_landmarks.landmark[26].y * frame.shape[0]) # left knee point relative to the frame of the camera
 
@@ -99,7 +107,6 @@ while(True):
             left_knee_to_head_ratio *= 1000 # scale it up for more precise accuracy
             knee_to_head_ratios.append(left_knee_to_head_ratio)
 
-            # logging.info(f"Calulation: head_point: {head_point[1]} - left_knee_relative: {left_knee_relative} then divided by distance is {distance}")
             logging.info(f"THE LEFT KNEE TO HEAD RATIO IS {left_knee_to_head_ratio}")
 
             if len(knee_to_head_ratios) > num_frames:
@@ -109,8 +116,7 @@ while(True):
                 ratio_change = knee_to_head_ratios[-1] - knee_to_head_ratios[0]
                 logging.info(f"Ratio change over {num_frames} frames: {ratio_change}")
                 
-                # Decide if the movement indicates running
-                if ratio_change > threshold:  # Define an appropriate threshold
+                if ratio_change > threshold:
                     logging.info("Running detected!")
                 else:
                     logging.info("No significant running detected.")
@@ -130,7 +136,7 @@ while(True):
 
     # obstacle test scuffed code
     if len(obstacles) == 0:
-        obstacles.append(obstacle([random.randint(0, 640), random.randint(0, 480)], [10, 10], random.choice(["hourglass", "phone", "instagram"])))
+        obstacles.append(obstacle(random.choice(object_locations), [10, 10], random.choice(["hourglass", "phone", "instagram"])))
     else:
         for obs in obstacles:
 
