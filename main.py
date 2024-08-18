@@ -198,34 +198,73 @@ while(True):
         max_obstacles += 1
 
     # obstacle test scuffed code
-    if len(obstacles) == 0:
-        obstacles.append(Obstacle(random.choice(object_locations), [10, 10], random.choice(["hourglass", "phone", "instagram"])))
-    else:
-        for obs in obstacles:
+        if len(obstacles) == 0:
+            obstacles.append(Obstacle(random.choice(object_locations), [10, 10], random.choice(["hourglass", "phone", "instagram"])))
+        else:
+            for obs in obstacles:
 
-            frame = obs.func(cur_frame, frame, position=(obs.position[0], obs.position[1]), size=(obs.size[0], obs.size[1]))
-            obs.inc()
-            if results.pose_landmarks:
-                for landmark in results.pose_landmarks.landmark:
-                    x, y = int(landmark.x * frame.shape[1]), int(landmark.y * frame.shape[0])
-                    if obs.collide([x, y]):
-                        print("COLLISION DETECTED")
-                        lives -= 1
-                        if lives == 2:
-                            lights.left_off(light_port)
-                        elif lives == 1:
-                            lights.middle_off(light_port)
-                        elif lives <= 0:
-                            lights.right_off(light_port)
-                            logging.info("GAME OVER")
-                            game_over = True
+                frame = obs.func(cur_frame, frame, position=(obs.position[0], obs.position[1]), size=(obs.size[0], obs.size[1]))
+                obs.inc()
+                if results.pose_landmarks:
+                    for landmark in results.pose_landmarks.landmark:
+                        x, y = int(landmark.x * frame.shape[1]), int(landmark.y * frame.shape[0])
+                        if obs.collide([x, y]):
+                            print("COLLISION DETECTED")
+                            lives -= 1
+                            if lives == 2:
+                                lights.left_off(light_port)
+                            elif lives == 1:
+                                lights.middle_off(light_port)
+                            elif lives <= 0:
+                                lights.right_off(light_port)
+                                logging.info("GAME OVER")
+                                game_over = True
+                                break
+
+                            # Add quiz feature here
+                            flag = True  # hardcoded answer for now
+                            statement = "Russia is the largest country in the world"
+                            quiz_start_time = time.time()
+                            while time.time() - quiz_start_time < 3:
+                                frame = np.zeros((480, 720, 3), dtype=np.uint8)
+                                frame = cv2.putText(frame, statement, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+                                frame[:240, :, :] = (255, 0, 0)  # red for false
+                                frame[240:, :, :] = (0, 0, 255)  # blue for true
+                                frame = cv2.putText(frame, str(3 - int(time.time() - quiz_start_time)), (350, 250), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 4)
+                                cv2.imshow('frame', frame)
+                                if cv2.waitKey(1) & 0xFF == ord('q'):
+                                    break
+                                ret, frame = vid.read()
+                                frame = cv2.flip(frame, 1)
+                                results = pose_detector.process(frame)
+                                if results.pose_landmarks:
+                                    x, y = int(results.pose_landmarks.landmark[0].x * frame.shape[1]), int(results.pose_landmarks.landmark[0].y * frame.shape[0])
+                                    if y < 240:
+                                        user_answer = False
+                                    else:
+                                        user_answer = True
+                            if user_answer == flag:
+                                lives += 1
+                                if lives == 2:
+                                    lights.left_on(light_port)
+                                elif lives == 3:
+                                    lights.middle_on(light_port)
+                                logging.info("Correct answer! You got a life back.")
+                                frame = np.zeros((480, 720, 3), dtype=np.uint8)
+                                frame = cv2.putText(frame, "Correct!", (180, 240), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 4)
+                                cv2.imshow('frame', frame)
+                                cv2.waitKey(1000)
+                            else:
+                                logging.info("Incorrect answer.")
+                                frame = np.zeros((480, 720, 3), dtype=np.uint8)
+                                frame = cv2.putText(frame, "Incorrect!", (180, 240), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 4)
+                                cv2.imshow('frame', frame)
+                                cv2.waitKey(1000)
+                            obstacles.remove(obs)
                             break
+                if obs.size[0] > 200 or obs.size[1] > 200:
+                    obstacles.remove(obs) # too big
 
-
-                        obstacles.remove(obs)
-                        break
-        if obs.size[0] > 200 or obs.size[1] > 200:
-            obstacles.remove(obs) # too big
     
     frame = cv2.putText(frame, f"Time Elapsed: {round(cur_time - start_time, 2)}s", (0, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     
